@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import Hero from '../components/Hero';
 import Categories from '../components/Categories';
 import Delivery from '../components/Delivery';
@@ -8,9 +9,25 @@ import { getFeaturedProducts } from '../data/products';
 
 export default function Home() {
   const featuredProducts = getFeaturedProducts();
+  const location = useLocation();
+  const [redirectMessage, setRedirectMessage] = useState(null);
+
+  // Show error when redirected (e.g. unauthorized admin access)
+  useEffect(() => {
+    if (location.state?.message) {
+      setRedirectMessage(location.state.message);
+      window.history.replaceState({}, document.title, location.pathname);
+    }
+  }, [location]);
 
   return (
     <>
+      {redirectMessage && (
+        <div className="auth-message-banner" role="alert">
+          {redirectMessage}
+          <button type="button" onClick={() => setRedirectMessage(null)} aria-label="Dismiss">×</button>
+        </div>
+      )}
       <Hero />
       <Categories />
       
@@ -27,35 +44,6 @@ export default function Home() {
             <Link to="/shop" className="view-all-btn">
               View All Products
             </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Offers Section */}
-      <section className="offers-section">
-        <div className="container">
-          <h2 className="section-title">Special Offers</h2>
-          <div className="offers-grid">
-            <div className="offer-card">
-              <div className="offer-icon">🎁</div>
-              <h3>Free Shipping</h3>
-              <p>On orders above ₹2000</p>
-            </div>
-            <div className="offer-card">
-              <div className="offer-icon">💰</div>
-              <h3>10% Off</h3>
-              <p>Use code WELCOME10 on first order</p>
-            </div>
-            <div className="offer-card">
-              <div className="offer-icon">🎨</div>
-              <h3>Custom Designs</h3>
-              <p>Get 15% off on customizable products</p>
-            </div>
-            <div className="offer-card">
-              <div className="offer-icon">⭐</div>
-              <h3>Loyalty Rewards</h3>
-              <p>Earn points on every purchase</p>
-            </div>
           </div>
         </div>
       </section>

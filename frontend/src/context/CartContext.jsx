@@ -1,26 +1,136 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from './AuthContext.jsx';
 
 const CartContext = createContext();
 
 export function CartProvider({ children }) {
+  const { user } = useAuth();
   const [cartItems, setCartItems] = useState([]);
+  const [hydrated, setHydrated] = useState(false);
 
-  // Load cart from localStorage on mount
-  useEffect(() => {
+  const loadLocalCart = () => {
     const savedCart = localStorage.getItem('cart');
-    if (savedCart) {
-      try {
-        setCartItems(JSON.parse(savedCart));
-      } catch (error) {
-        console.error('Error loading cart from localStorage:', error);
-      }
+    if (!savedCart) return [];
+    try {
+      const parsed = JSON.parse(savedCart);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+      console.error('Error loading cart from localStorage:', error);
+      return [];
     }
-  }, []);
+  };
 
-  // Save cart to localStorage whenever it changes
+  const saveLocalCart = (items) => {
+    localStorage.setItem('cart', JSON.stringify(items));
+  };
+
+  const authHeaders = () => ({
+    'Content-Type': 'application/json',
+    ...(user?.token ? { Authorization: `Bearer ${user.token}` } : {}),
+  });
+
+  // Hydrate cart:
+  // - If logged in: prefer DB cart; if DB empty and local has items -> push local to DB
+  // - If guest: use localStorage
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(cartItems));
-  }, [cartItems]);
+    const hydrate = async () => {
+      try {
+        if (!user?.token) {
+          const localItems = loadLocalCart();
+          setCartItems(localItems);
+          setHydrated(true);
+          return;
+        }
+
+        const localItems = loadLocalCart();
+        const res = await fetch('/api/cart', { headers: authHeaders() });
+        const data = await res.json().catch(() => ({ items: [] }));
+        const dbItems = Array.isArray(data?.items) ? data.items : [];
+        const normalizedDb = dbItems.map((i) => ({
+          id: i.itemKey,
+          productId: i.productId,
+          name: i.name,
+          price: i.price,
+          image: i.image,
+          quantity: i.quantity,
+          category: i.category,
+          customizable: i.customizable,
+          customization: i.customization || {},
+        }));
+
+        if (normalizedDb.length === 0 && localItems.length > 0) {
+          await fetch('/api/cart', {
+            method: 'PUT',
+            headers: authHeaders(),
+            body: JSON.stringify({
+              items: localItems.map((i) => ({
+                itemKey: i.id,
+                productId: i.productId,
+                name: i.name,
+                price: i.price,
+                image: i.image,
+                quantity: i.quantity,
+                category: i.category,
+                customizable: i.customizable,
+                customization: i.customization,
+              })),
+            }),
+          });
+          setCartItems(localItems);
+        } else {
+          setCartItems(normalizedDb);
+        }
+
+        localStorage.removeItem('cart');
+        setHydrated(true);
+      } catch (error) {
+        console.error('Error hydrating cart:', error);
+        const localItems = loadLocalCart();
+        setCartItems(localItems);
+        setHydrated(true);
+      }
+    };
+
+    hydrate();
+  }, [user?.token]);
+
+  // Persist cart changes:
+  // - guest: localStorage
+  // - logged in: MongoDB via /api/cart
+  useEffect(() => {
+    if (!hydrated) return;
+
+    if (!user?.token) {
+      saveLocalCart(cartItems);
+      return;
+    }
+
+    const persist = async () => {
+      try {
+        await fetch('/api/cart', {
+          method: 'PUT',
+          headers: authHeaders(),
+          body: JSON.stringify({
+            items: cartItems.map((i) => ({
+              itemKey: i.id,
+              productId: i.productId,
+              name: i.name,
+              price: i.price,
+              image: i.image,
+              quantity: i.quantity,
+              category: i.category,
+              customizable: i.customizable,
+              customization: i.customization,
+            })),
+          }),
+        });
+      } catch (error) {
+        console.error('Error saving cart to server:', error);
+      }
+    };
+
+    persist();
+  }, [cartItems, hydrated, user?.token]);
 
   const addToCart = (product, customization = {}, quantity = 1) => {
     // Create unique ID based on product and customization
@@ -89,6 +199,9 @@ export function CartProvider({ children }) {
   const clearCart = () => {
     setCartItems([]);
     localStorage.removeItem('cart');
+    if (user?.token) {
+      fetch('/api/cart', { method: 'DELETE', headers: authHeaders() }).catch(() => {});
+    }
   };
 
   const getTotalPrice = () => {

@@ -67,34 +67,164 @@ export default function Checkout() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handlePlaceOrder = () => {
+  const loadRazorpay = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => {
+        resolve(true);
+      };
+      script.onerror = () => {
+        resolve(false);
+      };
+      document.body.appendChild(script);
+    });
+  };
+
+  const handlePlaceOrder = async () => {
+    if (!user) {
+      alert('Please login to place an order');
+      return;
+    }
+
     if (!validateForm()) {
       return;
     }
 
-    // Generate order ID
-    const newOrderId = `ORD-${Date.now()}`;
-    setOrderId(newOrderId);
+    try {
+      // 1. Create Order in Backend
+      const orderItems = cartItems.map((item) => ({
+        name: item.name,
+        qty: item.quantity,
+        image: item.image,
+        price: item.price,
+        productId: item.productId,
+        customization: item.customization || {},
+      }));
 
-    // Save order to localStorage (mock order history)
-    const orders = JSON.parse(localStorage.getItem('orders') || '[]');
-    const order = {
-      id: newOrderId,
-      items: cartItems,
-      shippingAddress: formData,
-      paymentMethod: formData.paymentMethod,
-      total: total,
-      status: 'confirmed',
-      date: new Date().toISOString()
-    };
-    orders.push(order);
-    localStorage.setItem('orders', JSON.stringify(orders));
+      const orderData = {
+        orderItems,
+        shippingAddress: {
+          fullName: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+          address: formData.address,
+          city: formData.city,
+          state: formData.state,
+          postalCode: formData.pincode,
+          country: 'India',
+        },
+        paymentMethod: formData.paymentMethod,
+        itemsPrice: subtotal,
+        taxPrice: tax,
+        shippingPrice: shipping,
+        totalPrice: total,
+      };
 
-    // Clear cart
-    clearCart();
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}`,
+        },
+        body: JSON.stringify(orderData),
+      });
 
-    // Show success
-    setOrderPlaced(true);
+      if (!response.ok) {
+        const rawText = await response.text().catch(() => '');
+        let message = '';
+        try {
+          const parsed = rawText ? JSON.parse(rawText) : null;
+          message = parsed?.message || '';
+        } catch {
+          message = '';
+        }
+        throw new Error(message || rawText || `Failed to place order (HTTP ${response.status})`);
+      }
+
+      const createdOrder = await response.json();
+
+      if (formData.paymentMethod === 'razorpay') {
+        // 2. Load Razorpay SDK
+        const res = await loadRazorpay();
+
+        if (!res) {
+          alert('Razorpay SDK failed to load. Are you online?');
+          return;
+        }
+
+        // 3. Create Razorpay Order (Server side)
+        const paymentData = await fetch('/api/payment/create-order', {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${user.token}`,
+          },
+          body: JSON.stringify({ amount: total }),
+        }).then((t) => t.json());
+
+        // Get Razorpay Key ID
+        const razorpayKey = await fetch('/api/config/razorpay').then((t) => t.text());
+
+        // 4. Open Razorpay
+        const options = {
+          key: razorpayKey,
+          amount: paymentData.amount,
+          currency: 'INR',
+          name: 'Shri Ahalya Tex',
+          description: 'Purchase of goods',
+          order_id: paymentData.id,
+          handler: async function (response) {
+            // 5. Verify Payment
+            const verifyRes = await fetch('/api/payment/verify-payment', {
+              method: 'POST',
+              credentials: 'include',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${user.token}`,
+              },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                orderId: createdOrder._id,
+              }),
+            });
+
+            if (verifyRes.ok) {
+              setOrderId(createdOrder._id);
+              clearCart();
+              setOrderPlaced(true);
+              navigate(`/orders/${createdOrder._id}`);
+            } else {
+              alert('Payment verification failed');
+            }
+          },
+          prefill: {
+            name: formData.fullName,
+            email: formData.email,
+            contact: formData.phone,
+          },
+          theme: {
+            color: '#3399cc',
+          },
+        };
+
+        const paymentObject = new window.Razorpay(options);
+        paymentObject.open();
+      } else {
+        // COD Logic
+        setOrderId(createdOrder._id);
+        clearCart();
+        setOrderPlaced(true);
+        navigate(`/orders/${createdOrder._id}`);
+      }
+    } catch (error) {
+      console.error('Order error:', error);
+      alert(error?.message || 'Failed to place order. Please try again.');
+    }
   };
 
   if (cartItems.length === 0 && !orderPlaced) {
@@ -136,8 +266,11 @@ export default function Checkout() {
             <button className="shop-now-btn" onClick={() => navigate('/')}>
               Continue Shopping
             </button>
-            <button className="view-orders-btn" onClick={() => navigate('/profile?tab=orders')}>
-              View Orders
+            <button className="view-orders-btn" onClick={() => navigate(`/orders/${orderId}`)}>
+              View / Track Order
+            </button>
+            <button className="view-orders-btn" onClick={() => navigate('/my-orders')}>
+              My Orders
             </button>
           </div>
         </div>
@@ -262,21 +395,11 @@ export default function Checkout() {
                       <input
                         type="radio"
                         name="paymentMethod"
-                        value="card"
-                        checked={formData.paymentMethod === 'card'}
+                        value="razorpay"
+                        checked={formData.paymentMethod === 'razorpay'}
                         onChange={handleChange}
                       />
-                      <span>Credit/Debit Card</span>
-                    </label>
-                    <label className="payment-option">
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value="upi"
-                        checked={formData.paymentMethod === 'upi'}
-                        onChange={handleChange}
-                      />
-                      <span>UPI</span>
+                      <span>Pay Online (Razorpay)</span>
                     </label>
                   </div>
                 </div>

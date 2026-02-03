@@ -16,14 +16,31 @@ export default function Profile() {
   const [recentlyViewed, setRecentlyViewed] = useState([]);
 
   useEffect(() => {
-    // Load orders from localStorage
-    const savedOrders = JSON.parse(localStorage.getItem('orders') || '[]');
-    setOrders(savedOrders);
+    // Load orders from backend
+    const fetchOrders = async () => {
+      try {
+        const response = await fetch('/api/orders/myorders', {
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setOrders(data);
+        }
+      } catch (error) {
+        console.error('Error fetching orders:', error);
+      }
+    };
+
+    if (user) {
+      fetchOrders();
+    }
 
     // Load recently viewed
     const recent = getRecentlyViewed();
     setRecentlyViewed(recent);
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -53,7 +70,27 @@ export default function Profile() {
     <>
       <div className="profile-page">
         <div className="profile-container">
-          <h1 className="profile-title">My Profile</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+            <div
+              style={{
+                width: 46,
+                height: 46,
+                borderRadius: 999,
+                background: '#EAD7C1',
+                border: '1px solid #C2A16D',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 800,
+                color: '#3B2614',
+              }}
+              aria-label="User photo"
+              title={user?.name}
+            >
+              {(user?.name || 'U').slice(0, 1).toUpperCase()}
+            </div>
+            <h1 className="profile-title" style={{ margin: 0 }}>My Profile</h1>
+          </div>
 
           <div className="profile-tabs">
             <button
@@ -107,6 +144,11 @@ export default function Profile() {
             {activeTab === 'orders' && (
               <div className="orders-section">
                 <h2>Order History</h2>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+                  <button className="view-orders-btn" onClick={() => navigate('/my-orders')}>
+                    View All
+                  </button>
+                </div>
                 {orders.length === 0 ? (
                   <div className="empty-orders">
                     <p>No orders yet</p>
@@ -115,12 +157,12 @@ export default function Profile() {
                 ) : (
                   <div className="orders-list">
                     {orders.map(order => (
-                      <div key={order.id} className="order-card">
+                      <div key={order._id} className="order-card" style={{ cursor: 'pointer' }} onClick={() => navigate(`/orders/${order._id}`)}>
                         <div className="order-header">
                           <div>
-                            <h3>Order #{order.id}</h3>
+                            <h3>Order #{String(order._id).slice(-6)}</h3>
                             <p className="order-date">
-                              {new Date(order.date).toLocaleDateString('en-IN', {
+                              {new Date(order.createdAt).toLocaleDateString('en-IN', {
                                 year: 'numeric',
                                 month: 'long',
                                 day: 'numeric'
@@ -128,31 +170,31 @@ export default function Profile() {
                             </p>
                           </div>
                           <div className="order-status">
-                            <span className={`status-badge ${order.status}`}>{order.status}</span>
-                            <p className="order-total">₹ {order.total.toLocaleString('en-IN')}</p>
+                            <span className={`status-badge ${order.orderStatus || ''}`}>{order.orderStatus}</span>
+                            <p className="order-total">₹ {Number(order.totalPrice || 0).toLocaleString('en-IN')}</p>
                           </div>
                         </div>
                         <div className="order-items-list">
-                          {order.items.map(item => (
-                            <div key={item.id} className="order-item-card">
+                          {(order.orderItems || []).slice(0, 2).map((item, idx) => (
+                            <div key={`${item.product}-${idx}`} className="order-item-card">
                               <img src={item.image || '/hero.png'} alt={item.name} />
                               <div>
                                 <p>{item.name}</p>
                                 <small>
                                   {item.customization?.size && `Size: ${item.customization.size} `}
                                   {item.customization?.color && `Color: ${item.customization.color} `}
-                                  Qty: {item.quantity}
+                                  Qty: {item.qty}
                                 </small>
                               </div>
-                              <p>₹ {(item.price * item.quantity).toLocaleString('en-IN')}</p>
+                              <p>₹ {(Number(item.price || 0) * Number(item.qty || 0)).toLocaleString('en-IN')}</p>
                             </div>
                           ))}
                         </div>
                         <div className="order-address">
                           <p><strong>Shipping to:</strong></p>
-                          <p>{order.shippingAddress.fullName}</p>
-                          <p>{order.shippingAddress.address}</p>
-                          <p>{order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.pincode}</p>
+                          <p>{user.name}</p>
+                          <p>{order.shippingAddress?.address}</p>
+                          <p>{order.shippingAddress?.city}{order.shippingAddress?.postalCode ? ` - ${order.shippingAddress.postalCode}` : ''}</p>
                         </div>
                       </div>
                     ))}

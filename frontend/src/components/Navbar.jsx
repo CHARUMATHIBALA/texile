@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import LoginModal from './LoginModal';
 import SignupModal from './SignupModal';
+import AdminSignupModal from './AdminSignupModal';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
@@ -78,6 +79,14 @@ export default function Navbar() {
               Profile
             </li>
           )}
+          {isAuthenticated && (user?.role === 'admin' || user?.isAdmin) && (
+            <li
+              className="nav-button"
+              onClick={() => navigate('/admin')}
+            >
+              Admin
+            </li>
+          )}
         </ul>
 
         <div className="icons">
@@ -119,6 +128,11 @@ export default function Navbar() {
                   <Link to="/profile" className="profile-dropdown-item" onClick={() => setShowProfileMenu(false)}>
                     My Profile
                   </Link>
+                  {(user?.role === 'admin' || user?.isAdmin) && (
+                    <Link to="/admin/dashboard" className="profile-dropdown-item" onClick={() => setShowProfileMenu(false)}>
+                      Admin Dashboard
+                    </Link>
+                  )}
                   <Link to="/profile?tab=orders" className="profile-dropdown-item" onClick={() => setShowProfileMenu(false)}>
                     Orders
                   </Link>
@@ -132,13 +146,6 @@ export default function Navbar() {
               )}
             </div>
           )}
-          <span 
-            className="icon" 
-            onClick={() => navigate('/about')}
-            title="About Us"
-          >
-            ℹ️
-          </span>
         </div>
       </nav>
 

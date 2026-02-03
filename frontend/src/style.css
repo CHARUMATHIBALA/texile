@@ -3104,6 +3104,10 @@ button:hover {
   background: #6C757D;
 }
 
+ .cart-summary .continue-shopping-btn {
+  margin-top: 28px;
+ }
+
 .continue-shopping-btn:hover {
   background: #5A6268;
 }
@@ -4899,6 +4903,40 @@ button:hover {
   display: block;
 }
 
+/* Login form error - clear, professional */
+.login-error {
+  background: #FDE8E8;
+  color: #DC3545;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  border: 1px solid #F5C6CB;
+}
+
+/* Banner for redirect messages (e.g. unauthorized access) */
+.auth-message-banner {
+  background: #5A3A1E;
+  color: #F5E6D3;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.auth-message-banner button {
+  background: transparent;
+  color: inherit;
+  font-size: 20px;
+  padding: 0 8px;
+  cursor: pointer;
+  border: none;
+  opacity: 0.9;
+}
+.auth-message-banner button:hover {
+  opacity: 1;
+}
+
 .checkout-form input.error,
 .checkout-form textarea.error {
   border-color: #DC3545;
@@ -6680,4 +6718,37 @@ button:hover {
     width: 80px;
     height: 100px;
   }
+}
+
+/* Admin Auth Page Styles */
+.admin-auth-container {
+  min-height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 20px;
+  background: #F3E6D6;
+}
+
+.admin-auth-card {
+  background: #FFFFFF;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 450px;
+  margin-bottom: 40px;
+}
+
+.admin-auth-title {
+  text-align: center;
+  margin-bottom: 30px;
+  font-size: 28px;
+  color: #3B2614;
+}
+
+.footer-admin-link a:hover {
+  text-decoration: underline !important;
+  opacity: 1;
 }
