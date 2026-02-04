@@ -627,6 +627,7 @@ button:hover {
   background: #EAD7C1;
   outline: none;
   -webkit-appearance: none;
+  appearance: none;
   cursor: pointer;
 }
 
@@ -3104,9 +3105,20 @@ button:hover {
   background: #6C757D;
 }
 
- .cart-summary .continue-shopping-btn {
+.cart-continue-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.cart-continue-wrap .continue-shopping-btn {
+  width: 85%;
+  max-width: 320px;
+}
+
+.cart-summary .continue-shopping-btn {
   margin-top: 28px;
- }
+}
 
 .continue-shopping-btn:hover {
   background: #5A6268;
@@ -3124,6 +3136,72 @@ button:hover {
   margin: 0 auto;
 }
 
+ .checkout-stepper {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 auto 18px;
+  max-width: 900px;
+ }
+
+ .checkout-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(194, 161, 109, 0.6);
+ }
+
+ .checkout-step-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #cbd5e1;
+ }
+
+ .checkout-step-label {
+  font-family: 'Poppins', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4A2E1B;
+ }
+
+ .checkout-step.done .checkout-step-dot {
+  background: #16a34a;
+ }
+
+ .checkout-step.current .checkout-step-dot {
+  background: #8B5A2B;
+ }
+
+ .checkout-step.current .checkout-step-label {
+  font-weight: 800;
+ }
+
+ .buy-now-btn,
+ .buy-now-btn-card {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 10px;
+  background: #111827;
+  color: #FFFFFF;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s ease;
+ }
+
+ .buy-now-btn:hover,
+ .buy-now-btn-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.16);
+ }
+
 .checkout-title {
   font-family: 'Playfair Display', serif;
   font-size: 36px;
@@ -3131,6 +3209,15 @@ button:hover {
   margin-bottom: 30px;
   text-align: center;
 }
+
+ .checkout-subtitle {
+   margin: -18px auto 26px;
+   max-width: 760px;
+   text-align: center;
+   font-family: 'Poppins', sans-serif;
+   font-size: 14px;
+   color: #6D4C3A;
+ }
 
 .checkout-content {
   display: grid;
@@ -3239,6 +3326,17 @@ button:hover {
   font-weight: 600;
   color: #8B5A2B;
 }
+
+ .payment-security-hint {
+   margin-top: 12px;
+   padding: 12px 14px;
+   background: #F9F5F0;
+   border: 1px solid #E8DCC8;
+   border-radius: 10px;
+   font-family: 'Poppins', sans-serif;
+   font-size: 13px;
+   color: #4A2E1B;
+ }
 
 .place-order-btn {
   width: 100%;
@@ -4667,6 +4765,91 @@ button:hover {
   background: #28A745;
   color: #FFFFFF;
 }
+
+ .tracking {
+   margin-top: 8px;
+   margin-bottom: 14px;
+ }
+
+ .tracking-bar {
+   height: 10px;
+   background: #E8DCC8;
+   border-radius: 999px;
+   overflow: hidden;
+   border: 1px solid rgba(139, 90, 43, 0.25);
+ }
+
+ .tracking-bar-fill {
+   height: 100%;
+   width: 0%;
+   background: linear-gradient(90deg, #28A745, #16a34a);
+   border-radius: 999px;
+   transition: width 300ms ease;
+ }
+
+ .tracking-steps {
+   display: grid;
+   grid-template-columns: repeat(5, minmax(0, 1fr));
+   gap: 8px;
+   margin-top: 12px;
+ }
+
+ .tracking-step {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   gap: 6px;
+   text-align: center;
+ }
+
+ .tracking-dot {
+   width: 14px;
+   height: 14px;
+   border-radius: 999px;
+   background: #cbd5e1;
+   border: 2px solid #FFFFFF;
+   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+ }
+
+ .tracking-step.done .tracking-dot {
+   background: #16a34a;
+ }
+
+ .tracking-step.current .tracking-dot {
+   background: #8B5A2B;
+ }
+
+ .tracking-label {
+   font-family: 'Poppins', sans-serif;
+   font-size: 12px;
+   color: #4A2E1B;
+   line-height: 1.2;
+ }
+
+ .tracking-step.done .tracking-label {
+   font-weight: 600;
+ }
+
+ .tracking-step.current .tracking-label {
+   font-weight: 700;
+ }
+
+ .tracking-meta {
+   display: grid;
+   gap: 8px;
+   margin-top: 10px;
+   padding-top: 12px;
+   border-top: 1px solid #E8DCC8;
+ }
+
+ .tracking-meta-row {
+   display: flex;
+   justify-content: space-between;
+   gap: 12px;
+   font-family: 'Poppins', sans-serif;
+   font-size: 13px;
+   color: #4A2E1B;
+ }
 
 .order-total {
   font-family: 'Playfair Display', serif;

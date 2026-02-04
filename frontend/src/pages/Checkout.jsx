@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import Footer from '../components/Footer';
@@ -7,8 +7,15 @@ import EmptyState from '../components/EmptyState';
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const { cartItems, getTotalPrice, clearCart } = useCart();
+  const location = useLocation();
+  const { cartItems, clearCart } = useCart();
   const { user } = useAuth();
+  const buyNowItem = location?.state?.buyNowItem;
+
+  const effectiveItems = useMemo(() => {
+    if (buyNowItem) return [buyNowItem];
+    return cartItems;
+  }, [buyNowItem, cartItems]);
   const [formData, setFormData] = useState({
     fullName: user?.name || '',
     email: user?.email || '',
@@ -23,10 +30,14 @@ export default function Checkout() {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState('');
 
-  const subtotal = getTotalPrice();
+  const subtotal = useMemo(() => {
+    return effectiveItems.reduce((sum, i) => sum + Number(i.price || 0) * Number(i.quantity || 0), 0);
+  }, [effectiveItems]);
   const tax = subtotal * 0.18;
   const shipping = subtotal >= 2000 ? 0 : 100;
   const total = subtotal + tax + shipping;
+
+  const trackingPreviewSteps = ['Order Placed', 'Shipped', 'Out for Delivery', 'Delivered'];
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -93,7 +104,7 @@ export default function Checkout() {
 
     try {
       // 1. Create Order in Backend
-      const orderItems = cartItems.map((item) => ({
+      const orderItems = effectiveItems.map((item) => ({
         name: item.name,
         qty: item.quantity,
         image: item.image,
@@ -145,7 +156,8 @@ export default function Checkout() {
 
       const createdOrder = await response.json();
 
-      if (formData.paymentMethod === 'razorpay') {
+      const isOnlinePayment = formData.paymentMethod !== 'cod';
+      if (isOnlinePayment) {
         // 2. Load Razorpay SDK
         const res = await loadRazorpay();
 
@@ -217,7 +229,7 @@ export default function Checkout() {
       } else {
         // COD Logic
         setOrderId(createdOrder._id);
-        clearCart();
+        if (!buyNowItem) clearCart();
         setOrderPlaced(true);
         navigate(`/orders/${createdOrder._id}`);
       }
@@ -227,7 +239,7 @@ export default function Checkout() {
     }
   };
 
-  if (cartItems.length === 0 && !orderPlaced) {
+  if (effectiveItems.length === 0 && !orderPlaced) {
     return (
       <>
         <div className="checkout-page">
@@ -283,7 +295,26 @@ export default function Checkout() {
     <>
       <div className="checkout-page">
         <div className="checkout-container">
-          <h1 className="checkout-title">Checkout</h1>
+          <div className="checkout-stepper" aria-label="Checkout steps">
+            <div className="checkout-step done">
+              <div className="checkout-step-dot" />
+              <div className="checkout-step-label">Cart</div>
+            </div>
+            <div className="checkout-step current">
+              <div className="checkout-step-dot" />
+              <div className="checkout-step-label">Address</div>
+            </div>
+            <div className="checkout-step">
+              <div className="checkout-step-dot" />
+              <div className="checkout-step-label">Payment</div>
+            </div>
+            <div className="checkout-step">
+              <div className="checkout-step-dot" />
+              <div className="checkout-step-label">Confirmation</div>
+            </div>
+          </div>
+          <h1 className="checkout-title">Secure Checkout</h1>
+          <div className="checkout-subtitle">Your payment is processed securely. We never store card details.</div>
           
           <div className="checkout-content">
             <div className="checkout-form-section">
@@ -395,12 +426,58 @@ export default function Checkout() {
                       <input
                         type="radio"
                         name="paymentMethod"
-                        value="razorpay"
-                        checked={formData.paymentMethod === 'razorpay'}
+                        value="upi"
+                        checked={formData.paymentMethod === 'upi'}
                         onChange={handleChange}
                       />
-                      <span>Pay Online (Razorpay)</span>
+                      <span>UPI</span>
                     </label>
+                    <label className="payment-option">
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="card"
+                        checked={formData.paymentMethod === 'card'}
+                        onChange={handleChange}
+                      />
+                      <span>Credit / Debit Card</span>
+                    </label>
+                    <label className="payment-option">
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="netbanking"
+                        checked={formData.paymentMethod === 'netbanking'}
+                        onChange={handleChange}
+                      />
+                      <span>Net Banking</span>
+                    </label>
+                  </div>
+                  <div className="payment-security-hint">
+                    <strong>Security:</strong> Online payments use Razorpay secure checkout. For COD, pay only after delivery.
+                  </div>
+                </div>
+
+                <div className="delivery-preview">
+                  <h2>Delivery Tracking</h2>
+                  <div className="tracking">
+                    <div className="tracking-bar" aria-hidden="true">
+                      <div className="tracking-bar-fill" style={{ width: '25%' }} />
+                    </div>
+                    <div className="tracking-steps">
+                      {trackingPreviewSteps.map((step, idx) => (
+                        <div key={step} className={`tracking-step ${idx === 0 ? 'current' : ''}`}>
+                          <div className="tracking-dot" />
+                          <div className="tracking-label">{step}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="tracking-meta" style={{ marginTop: 0, paddingTop: 0, borderTop: 'none' }}>
+                    <div className="tracking-meta-row">
+                      <strong>Estimated delivery:</strong>{' '}
+                      <span>3-5 business days</span>
+                    </div>
                   </div>
                 </div>
 
@@ -413,7 +490,7 @@ export default function Checkout() {
             <div className="checkout-summary">
               <h2>Order Summary</h2>
               <div className="order-items">
-                {cartItems.map(item => (
+                {effectiveItems.map(item => (
                   <div key={item.id} className="order-item">
                     <div className="order-item-info">
                       <img src={item.image || '/hero.png'} alt={item.name} />

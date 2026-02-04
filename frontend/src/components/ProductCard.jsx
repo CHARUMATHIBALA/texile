@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useWishlist } from '../context/WishlistContext';
+import { calculateCustomizedUnitPrice } from '../utils/pricing';
 
 export default function ProductCard({ product, category = 'general' }) {
   const navigate = useNavigate();
@@ -23,6 +24,24 @@ export default function ProductCard({ product, category = 'general' }) {
     e.preventDefault();
     e.stopPropagation();
     navigate(`/product/${product.id}`);
+  };
+
+  const handleBuyNow = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const unitPrice = calculateCustomizedUnitPrice(product, {});
+    const buyNowItem = {
+      id: `${product.id}-buynow-${Date.now()}`,
+      productId: product.id,
+      name: product.name,
+      price: unitPrice,
+      image: product.image,
+      quantity: 1,
+      category: product.category || category,
+      customizable: !!product.customizable,
+      customization: {},
+    };
+    navigate('/checkout', { state: { buyNowItem } });
   };
 
   const price = product.price || product.basePrice || 0;
@@ -54,6 +73,9 @@ export default function ProductCard({ product, category = 'general' }) {
           onClick={handleViewDetails}
         >
           View Details
+        </button>
+        <button className="buy-now-btn-card" onClick={handleBuyNow}>
+          Buy Now
         </button>
       </div>
     </div>

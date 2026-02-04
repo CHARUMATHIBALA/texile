@@ -7,6 +7,7 @@ import { getProductById } from '../data/products';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { addToRecentlyViewed } from '../utils/recentlyViewed';
+import { calculateCustomizedUnitPrice } from '../utils/pricing';
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -44,7 +45,7 @@ export default function ProductDetail() {
 
   const handleAddToCart = (customizationData = {}) => {
     const finalCustomization = { ...customization, ...customizationData };
-    const finalPrice = calculatePrice(finalCustomization);
+    const finalPrice = calculateCustomizedUnitPrice(product, finalCustomization);
     
     addToCart(
       { ...product, price: finalPrice },
@@ -56,21 +57,22 @@ export default function ProductDetail() {
     alert('Item added to cart!');
   };
 
-  const calculatePrice = (custom) => {
-    if (!product.customizable) {
-      return product.price || 0;
-    }
-
-    let price = product.basePrice || product.price || 0;
-    
-    // Add pricing logic based on customizations
-    if (product.category === 'bags') {
-      if (custom.fabricType === 'premium') price += 199;
-      if (custom.customText) price += 99;
-      if (custom.imageUpload) price += 149;
-    }
-    
-    return price;
+  const handleBuyNow = () => {
+    const unitPrice = calculateCustomizedUnitPrice(product, customization);
+    const buyNowItem = {
+      id: `${product.id}-buynow-${Date.now()}`,
+      productId: product.id,
+      name: product.name,
+      price: unitPrice,
+      image: product.image,
+      quantity: 1,
+      category: product.category || 'general',
+      customizable: !!product.customizable,
+      customization: {
+        ...customization,
+      },
+    };
+    navigate('/checkout', { state: { buyNowItem } });
   };
 
   const toggleWishlist = () => {
@@ -81,7 +83,7 @@ export default function ProductDetail() {
     }
   };
 
-  const finalPrice = calculatePrice(customization);
+  const finalPrice = calculateCustomizedUnitPrice(product, customization);
 
   return (
     <>
@@ -141,6 +143,9 @@ export default function ProductDetail() {
                   >
                     Customize & Add to Cart
                   </button>
+                  <button className="buy-now-btn" onClick={handleBuyNow}>
+                    Buy Now
+                  </button>
                 </div>
               ) : (
                 <div className="quick-add-section">
@@ -149,6 +154,9 @@ export default function ProductDetail() {
                     onClick={() => handleAddToCart()}
                   >
                     Add to Cart
+                  </button>
+                  <button className="buy-now-btn" onClick={handleBuyNow}>
+                    Buy Now
                   </button>
                 </div>
               )}

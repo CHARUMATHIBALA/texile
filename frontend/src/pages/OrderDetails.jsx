@@ -3,10 +3,22 @@ import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Footer from '../components/Footer';
 
-const STATUS_STEPS = ['Placed', 'Confirmed', 'Shipped', 'Out for Delivery', 'Delivered'];
+const VISUAL_STATUS_STEPS = ['Placed', 'Packed', 'Shipped', 'Delivered'];
+
+function mapBackendStatusToVisual(status) {
+  if (!status) return 'Placed';
+  if (status === 'Placed') return 'Placed';
+  if (status === 'Confirmed') return 'Packed';
+  if (status === 'Shipped') return 'Shipped';
+  if (status === 'Out for Delivery') return 'Shipped';
+  if (status === 'Delivered') return 'Delivered';
+  if (status === 'Cancelled') return 'Cancelled';
+  return 'Placed';
+}
 
 function getCurrentStatus(order) {
-  return order?.orderStatus || (order?.isDelivered ? 'Delivered' : 'Placed');
+  const backend = order?.orderStatus || (order?.isDelivered ? 'Delivered' : 'Placed');
+  return mapBackendStatusToVisual(backend);
 }
 
 function buildHistory(order) {
@@ -79,7 +91,7 @@ export default function OrderDetails() {
 
   const activeStepIndex = useMemo(() => {
     if (currentStatus === 'Cancelled') return -1;
-    const idx = STATUS_STEPS.indexOf(currentStatus);
+    const idx = VISUAL_STATUS_STEPS.indexOf(currentStatus);
     return idx >= 0 ? idx : 0;
   }, [currentStatus]);
 
@@ -130,12 +142,12 @@ export default function OrderDetails() {
                     <div className="tracking-bar" aria-hidden="true">
                       <div
                         className="tracking-bar-fill"
-                        style={{ width: `${Math.round(((activeStepIndex + 1) / STATUS_STEPS.length) * 100)}%` }}
+                        style={{ width: `${Math.round(((activeStepIndex + 1) / VISUAL_STATUS_STEPS.length) * 100)}%` }}
                       />
                     </div>
 
                     <div className="tracking-steps">
-                      {STATUS_STEPS.map((step, idx) => {
+                      {VISUAL_STATUS_STEPS.map((step, idx) => {
                         const done = idx <= activeStepIndex;
                         const current = idx === activeStepIndex;
                         return (

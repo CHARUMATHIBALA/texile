@@ -29,6 +29,13 @@ const addOrderItems = async (req, res) => {
       user: req.user._id,
       shippingAddress,
       paymentMethod,
+      shippingTracking: {
+        carrier: 'Shri Ahalya Logistics',
+        trackingNumber: `SAT${Date.now()}`,
+        estimatedDelivery: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+        lastLocation: shippingAddress?.city || 'Warehouse',
+        lastUpdatedAt: new Date(),
+      },
       itemsPrice,
       taxPrice,
       shippingPrice,
@@ -86,7 +93,7 @@ const getOrders = async (req, res) => {
 // @route   PUT /api/orders/:id/status
 // @access  Admin
 const updateOrderStatus = async (req, res) => {
-  const { status, note } = req.body;
+  const { status, note, shippingTracking } = req.body;
   if (!ALLOWED_STATUSES.includes(status)) {
     return res.status(400).json({ message: 'Invalid order status' });
   }
@@ -101,6 +108,15 @@ const updateOrderStatus = async (req, res) => {
     order.orderStatus = status;
     order.statusHistory = Array.isArray(order.statusHistory) ? order.statusHistory : [];
     order.statusHistory.push({ status, date: Date.now(), note });
+  }
+
+  if (shippingTracking && typeof shippingTracking === 'object') {
+    order.shippingTracking = order.shippingTracking || {};
+    if (typeof shippingTracking.carrier === 'string') order.shippingTracking.carrier = shippingTracking.carrier;
+    if (typeof shippingTracking.trackingNumber === 'string') order.shippingTracking.trackingNumber = shippingTracking.trackingNumber;
+    if (shippingTracking.estimatedDelivery) order.shippingTracking.estimatedDelivery = shippingTracking.estimatedDelivery;
+    if (typeof shippingTracking.lastLocation === 'string') order.shippingTracking.lastLocation = shippingTracking.lastLocation;
+    order.shippingTracking.lastUpdatedAt = Date.now();
   }
 
   if (status === 'Delivered') {

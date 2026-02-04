@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext.jsx';
+import { calculateCustomizedUnitPrice } from '../utils/pricing';
 
 const CartContext = createContext();
 
@@ -138,11 +139,13 @@ export function CartProvider({ children }) {
       ? `${product.id}-${customization.size || ''}-${customization.color || ''}-${customization.material || customization.pattern || ''}`
       : `${product.id}-${customization.size || product.size || ''}-${customization.color || product.color || ''}`;
     
+    const computedUnitPrice = calculateCustomizedUnitPrice(product, customization);
+
     const cartItem = {
       id: customId,
       productId: product.id,
       name: product.name,
-      price: product.price || product.basePrice || 0,
+      price: computedUnitPrice,
       image: product.image,
       quantity: quantity,
       category: product.category || 'general',

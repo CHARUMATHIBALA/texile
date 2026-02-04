@@ -1,20 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useCart } from '../context/CartContext';
+import { calculateCustomizedUnitPrice } from '../utils/pricing';
 
 export default function CustomizationModal({ product, customization, onCustomizationChange, onAddToCart, onClose }) {
   const [price, setPrice] = useState(product.basePrice || product.price || 0);
 
   useEffect(() => {
-    let finalPrice = product.basePrice || product.price || 0;
-    
-    // Calculate price based on customizations
-    if (product.category === 'bags') {
-      if (customization.fabricType === 'premium') finalPrice += 199;
-      if (customization.customText) finalPrice += 99;
-      if (customization.imageUpload) finalPrice += 149;
-    }
-    
-    setPrice(finalPrice);
+    setPrice(calculateCustomizedUnitPrice(product, customization));
   }, [customization, product]);
 
   const handleChange = (field, value) => {

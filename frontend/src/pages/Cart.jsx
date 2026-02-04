@@ -178,9 +178,11 @@ export default function Cart() {
               >
                 Proceed to Checkout
               </button>
-              <Link to="/" className="continue-shopping-btn">
-                Continue Shopping
-              </Link>
+              <div className="cart-continue-wrap">
+                <Link to="/" className="continue-shopping-btn">
+                  Continue Shopping
+                </Link>
+              </div>
             </div>
           </div>
         </div>
