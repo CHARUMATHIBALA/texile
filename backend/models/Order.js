@@ -46,6 +46,21 @@ const orderSchema = mongoose.Schema(
       estimatedDelivery: { type: Date },
       lastLocation: { type: String },
       lastUpdatedAt: { type: Date },
+      origin: {
+        label: { type: String },
+        lat: { type: Number },
+        lng: { type: Number },
+      },
+      destination: {
+        label: { type: String },
+        lat: { type: Number },
+        lng: { type: Number },
+      },
+      agent: {
+        lat: { type: Number },
+        lng: { type: Number },
+        updatedAt: { type: Date },
+      },
     },
     itemsPrice: {
       type: Number,

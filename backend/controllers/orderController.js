@@ -2,6 +2,11 @@ import Order from '../models/Order.js';
 
 const ALLOWED_STATUSES = ['Placed', 'Confirmed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled'];
 
+const generateTrackingNumber = () => {
+  const rnd = Math.random().toString(36).slice(2, 8).toUpperCase();
+  return `WS-${Date.now()}-${rnd}`;
+};
+
 // @desc    Create new order
 // @route   POST /api/orders
 // @access  Private
@@ -30,11 +35,20 @@ const addOrderItems = async (req, res) => {
       shippingAddress,
       paymentMethod,
       shippingTracking: {
-        carrier: 'Shri Ahalya Logistics',
-        trackingNumber: `SAT${Date.now()}`,
+        carrier: 'Windsurf Logistics',
+        trackingNumber: generateTrackingNumber(),
         estimatedDelivery: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
         lastLocation: shippingAddress?.city || 'Warehouse',
         lastUpdatedAt: new Date(),
+        origin: {
+          label: 'Windsurf Warehouse',
+        },
+        destination: {
+          label: `${shippingAddress?.city || 'Destination'}`,
+        },
+        agent: {
+          updatedAt: new Date(),
+        },
       },
       itemsPrice,
       taxPrice,

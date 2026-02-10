@@ -14,6 +14,8 @@ import { fileURLToPath } from 'url';
 import uploadRoutes from './routes/uploadRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
 import wishlistRoutes from './routes/wishlistRoutes.js';
+import reviewRoutes from './routes/reviewRoutes.js';
+import trackingRoutes from './routes/trackingRoutes.js';
 import Order from './models/Order.js';
 
 dotenv.config();
@@ -43,6 +45,8 @@ app.use('/api/payment', paymentRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/tracking', trackingRoutes);
 
 app.get('/api/config/razorpay', (req, res) =>
   res.send(process.env.RAZORPAY_KEY_ID)

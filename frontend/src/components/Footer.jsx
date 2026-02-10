@@ -25,6 +25,8 @@ export default function Footer() {
               <li><Link to="/shop?filter=best">Best Sellers</Link></li>
               <li><Link to="/about">About Us</Link></li>
               <li><Link to="/contact">Contact Us</Link></li>
+              <li><a href="/reviews.html">Customer Reviews</a></li>
+              <li><a href="/track-order.html">Track Order</a></li>
             </ul>
           </nav>
 
